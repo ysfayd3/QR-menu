@@ -99,6 +99,11 @@ const productTranslations = {
 
 // Sayfa yüklendiğinde
 document.addEventListener('DOMContentLoaded', async () => {
+    // LocalDB'yi başlat (Eğer veri yoksa varsayılanları yükler)
+    if (typeof LocalDB !== 'undefined') {
+        LocalDB.initialize();
+    }
+
     // LocalDB'den verileri yükle
     await loadDataFromLocalDB();
     
