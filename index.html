@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leanor Cafe - Menü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Hide scrollbar but keep functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .animate-slideInRight {
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* Gradient background */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Card hover effect */
+        .product-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .product-card:active {
+            transform: scale(0.98);
+        }
+        
+        /* Category pill active state */
+        .category-pill {
+            transition: all 0.3s ease;
+        }
+        
+        /* Image loading effect */
+        .product-image {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+        
+        .product-image.loaded {
+            animation: none;
+        }
+        
+        /* Fixed header */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(102, 126, 234, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        /* Content padding for fixed header */
+        .content-with-header {
+            padding-top: 220px;
+        }
+        
+        /* Ensure body can scroll */
+        body {
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        
+        /* Category section spacing */
+        .category-section {
+            scroll-margin-top: 220px;
+        }
+        
+        /* First category extra spacing */
+        .category-section:first-child {
+            margin-top: 200px;
+        }
+        
+        /* Horizontal scroll categories */
+        .category-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 12px;
+            padding: 16px 0;
+        }
+        
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .category-tab {
+            flex-shrink: 0;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .category-tab.inactive {
+            background: #f3f4f6;
+            color: #9ca3af;
+        }
+        
+        /* Subcategory scroll */
+        .subcategory-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 8px;
+            padding: 12px 0;
+        }
+        
+        .subcategory-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .subcategory-tab {
+            flex-shrink: 0;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            white-space: nowrap;
+            border: 2px solid transparent;
+        }
+        
+        .subcategory-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .subcategory-tab.inactive {
+            background: white;
+            color: #6b7280;
+            border-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 gradient-bg flex items-center justify-center">
+        <div class="text-center px-6 animate-fadeInUp">
+            <div class="mb-8 animate-pulse-slow">
+                <div class="w-24 h-24 mx-auto bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center shadow-2xl">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-5xl font-bold text-white mb-3" id="cafe-name-welcome">Leanor Cafe</h1>
+            <p class="text-xl text-white/90 mb-12" id="cafe-tagline-welcome">Lezzetin ve Keyifin Adresi</p>
+            <button 
+                onclick="enterMenu()"
+                class="px-10 py-4 bg-white text-purple-600 rounded-full font-semibold text-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300"
+            >
+                Menüyü Keşfet
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="hidden min-h-screen">
+        <!-- Fixed Header -->
+        <header class="fixed-header gradient-bg text-white shadow-lg">
+            <!-- Language Selector -->
+            <div class="absolute top-4 left-4 z-10">
+                <button 
+                    onclick="toggleLanguage()"
+                    class="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full hover:bg-white/30 transition shadow-lg"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                    </svg>
+                    <span id="current-language" class="font-semibold">TR</span>
+                </button>
+            </div>
+            
+            <div class="px-4 py-8 text-center">
+                <h1 class="text-3xl font-bold mb-1" id="cafe-name">Leanor Cafe</h1>
+                <p class="text-sm text-white/90 mb-4" id="cafe-tagline">Lezzetin ve Keyifin Adresi</p>
+                
+                <!-- Search Bar -->
+                <div class="max-w-md mx-auto">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Ürün ara..." 
+                            oninput="searchProducts()"
+                            class="w-full px-4 py-3 pl-12 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+                        >
+                        <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Categories and Products - Vertical Layout -->
+        <main class="content-with-header px-4 py-6 pb-20">
+            <!-- Main Category Tabs - Horizontal Scroll -->
+            <div class="category-scroll mb-6" id="main-categories">
+                <!-- Main categories will be inserted here -->
+            </div>
+            
+            <!-- Subcategory Tabs - Horizontal Scroll -->
+            <div class="subcategory-scroll mb-6" id="subcategories" style="display: none;">
+                <!-- Subcategories will be inserted here -->
+            </div>
+            
+            <div id="menu-sections" class="space-y-6">
+                <!-- Products will be inserted here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-20">
+                <svg class="w-24 h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-gray-400 text-lg" id="empty-text">Ürün bulunamadı</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="product-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen">
+            <!-- Overlay -->
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative bg-white rounded-t-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all animate-slideInRight">
+                <!-- Close Button -->
+                <button 
+                    onclick="closeModal()"
+                    class="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center shadow-lg"
+                >
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                
+                <!-- Product Image -->
+                <div id="modal-image" class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 bg-cover bg-center"></div>
+                
+                <!-- Product Info -->
+                <div class="p-6">
+                    <h2 id="modal-title" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+                    <p id="modal-description" class="text-gray-600 mb-6"></p>
+                    
+                    <!-- Details -->
+                    <div id="modal-details" class="space-y-3 mb-6">
+                        <!-- Details will be inserted here -->
+                    </div>
+                    
+                    <!-- Price -->
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl">
+                        <span class="text-gray-600 font-medium">Fiyat</span>
+                        <span id="modal-price" class="text-3xl font-bold text-purple-600"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fotoğraf Depolama (IndexedDB) -->
+    <script src="photo-storage.js"></script>
+    
+    <!-- Fotoğraf Yardımcı Fonksiyonlar -->
+    <script src="photo-helper.js"></script>
+    
+    <!-- Yerel Veritabanı -->
+    <script src="local-database.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // Menüye giriş fonksiyonu
+        function enterMenu() {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const mainMenu = document.getElementById('main-menu');
+            
+            if (welcomeScreen && mainMenu) {
+                welcomeScreen.style.transition = 'opacity 0.5s ease';
+                welcomeScreen.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    mainMenu.classList.remove('hidden');
+                    mainMenu.classList.add('animate-fadeInUp');
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>

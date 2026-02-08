@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase'e Veri Yükleme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-600 to-blue-600 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">🔥 Firebase Veri Yükleme</h1>
+        <p class="text-gray-600 mb-6">LocalStorage'daki verileri Firebase'e yükleyin</p>
+        
+        <div id="status" class="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p class="text-blue-800">Hazır...</p>
+        </div>
+        
+        <div id="info" class="mb-6 space-y-3">
+            <!-- Bilgiler buraya eklenecek -->
+        </div>
+        
+        <div class="space-y-3">
+            <button onclick="checkData()" class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                📊 Verileri Kontrol Et
+            </button>
+            <button onclick="uploadData()" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+                🚀 LocalStorage'dan Firebase'e Yükle
+            </button>
+            <button onclick="uploadDefaultData()" class="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium">
+                📦 Varsayılan Verileri Yükle (47 Ürün)
+            </button>
+            <button onclick="clearFirebase()" class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+                🗑️ Firebase'i Temizle
+            </button>
+            <a href="admin.html" class="block w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-center">
+                👤 Admin Paneline Git
+            </a>
+            <a href="index.html" class="block w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-medium text-center">
+                🏠 Menüye Git
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                info: 'bg-blue-50 border-blue-200 text-blue-800',
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-orange-50 border-orange-200 text-orange-800'
+            };
+            statusDiv.className = `mb-6 p-4 rounded-lg border ${colors[type]}`;
+            statusDiv.innerHTML = `<p class="font-medium">${message}</p>`;
+        }
+        
+        function addInfo(title, value, type = 'info') {
+            const infoDiv = document.getElementById('info');
+            const colors = {
+                info: 'bg-blue-50 border-blue-200 text-blue-800',
+                success: 'bg-green-50 border-green-200 text-green-800',
+                warning: 'bg-orange-50 border-orange-200 text-orange-800'
+            };
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-lg border ${colors[type]}`;
+            div.innerHTML = `<p class="font-semibold">${title}</p><p class="text-sm">${value}</p>`;
+            infoDiv.appendChild(div);
+        }
+        
+        async function checkData() {
+            const infoDiv = document.getElementById('info');
+            infoDiv.innerHTML = '';
+            updateStatus('⏳ Veriler kontrol ediliyor...', 'info');
+            
+            try {
+                // LocalStorage kontrolü
+                const localMenu = JSON.parse(localStorage.getItem('menuData')) || [];
+                const localCategories = JSON.parse(localStorage.getItem('categories')) || [];
+                const localSettings = JSON.parse(localStorage.getItem('settings')) || {};
+                
+                addInfo('📦 LocalStorage - Ürünler', `${localMenu.length} ürün`, localMenu.length > 0 ? 'success' : 'warning');
+                addInfo('📂 LocalStorage - Kategoriler', `${localCategories.length} kategori`, localCategories.length > 0 ? 'success' : 'warning');
+                addInfo('⚙️ LocalStorage - Ayarlar', localSettings.cafeName || 'Yok', localSettings.cafeName ? 'success' : 'warning');
+                
+                // Firebase kontrolü
+                const firebaseMenu = await FirebaseDB.getMenu();
+                const firebaseCategories = await FirebaseDB.getCategories();
+                const firebaseSettings = await FirebaseDB.getSettings();
+                
+                addInfo('🔥 Firebase - Ürünler', `${firebaseMenu.length} ürün`, firebaseMenu.length > 0 ? 'success' : 'warning');
+                addInfo('🔥 Firebase - Kategoriler', `${firebaseCategories.length} kategori`, firebaseCategories.length > 0 ? 'success' : 'warning');
+                addInfo('🔥 Firebase - Ayarlar', firebaseSettings?.cafeName || 'Yok', firebaseSettings ? 'success' : 'warning');
+                
+                if (localMenu.length > 0 && firebaseMenu.length === 0) {
+                    updateStatus('⚠️ LocalStorage\'da veri var ama Firebase boş! "Firebase\'e Yükle" butonuna tıklayın.', 'warning');
+                } else if (firebaseMenu.length > 0) {
+                    updateStatus('✅ Firebase\'de veri var! Menü çalışıyor olmalı.', 'success');
+                } else {
+                    updateStatus('❌ Hiçbir yerde veri yok! Admin paneline giriş yapın.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Kontrol hatası:', error);
+                updateStatus(`❌ Hata: ${error.message}`, 'error');
+            }
+        }
+        
+        async function uploadData() {
+            updateStatus('⏳ Veriler Firebase\'e yükleniyor...', 'info');
+            
+            try {
+                // LocalStorage'dan verileri al
+                const localMenu = JSON.parse(localStorage.getItem('menuData')) || [];
+                const localCategories = JSON.parse(localStorage.getItem('categories')) || [];
+                const localSettings = JSON.parse(localStorage.getItem('settings')) || {};
+                
+                if (localMenu.length === 0) {
+                    updateStatus('❌ LocalStorage\'da veri yok! Önce admin paneline giriş yapın.', 'error');
+                    return;
+                }
+                
+                // Firebase'e yükle
+                await FirebaseDB.saveMenu(localMenu);
+                await FirebaseDB.saveCategories(localCategories);
+                await FirebaseDB.saveSettings(localSettings);
+                
+                updateStatus(`✅ Başarılı! ${localMenu.length} ürün, ${localCategories.length} kategori Firebase'e yüklendi!`, 'success');
+                
+                // Bilgileri güncelle
+                setTimeout(() => checkData(), 1000);
+                
+            } catch (error) {
+                console.error('Yükleme hatası:', error);
+                updateStatus(`❌ Yükleme hatası: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearFirebase() {
+            if (!confirm('Firebase\'deki TÜM verileri silmek istediğinizden emin misiniz?')) {
+                return;
+            }
+            
+            updateStatus('⏳ Firebase temizleniyor...', 'info');
+            
+            try {
+                // Boş verilerle üzerine yaz
+                await FirebaseDB.saveMenu([]);
+                await FirebaseDB.saveCategories([]);
+                await FirebaseDB.saveSettings({});
+                
+                updateStatus('✅ Firebase temizlendi!', 'success');
+                
+                // Bilgileri güncelle
+                setTimeout(() => checkData(), 1000);
+                
+            } catch (error) {
+                console.error('Temizleme hatası:', error);
+                updateStatus(`❌ Temizleme hatası: ${error.message}`, 'error');
+            }
+        }
+        
+        // Sayfa yüklendiğinde otomatik kontrol
+        window.addEventListener('load', checkData);
+    </script>
+</body>
+</html>

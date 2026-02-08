@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalDB Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🗄️ LocalDB Test</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 space-y-4">
+            <button onclick="testLocalDB()" class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Test LocalDB
+            </button>
+            
+            <button onclick="testImageUpload()" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Test Fotoğraf Yükleme
+            </button>
+            
+            <button onclick="showStats()" class="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                İstatistikleri Göster
+            </button>
+            
+            <button onclick="clearData()" class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                Tüm Verileri Sil
+            </button>
+            
+            <div id="output" class="mt-6 p-4 bg-gray-100 rounded-lg font-mono text-sm whitespace-pre-wrap"></div>
+        </div>
+    </div>
+
+    <script src="local-database.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+        
+        function testLocalDB() {
+            output.textContent = '';
+            log('🧪 LocalDB Test Başlıyor...\n');
+            
+            try {
+                // Veritabanını başlat
+                log('1. Veritabanı başlatılıyor...');
+                LocalDB.initialize();
+                log('✅ Veritabanı başlatıldı\n');
+                
+                // Menü verilerini al
+                log('2. Menü verileri alınıyor...');
+                const menu = LocalDB.menu.getAll();
+                log(`✅ ${menu.length} ürün bulundu\n`);
+                
+                // Kategorileri al
+                log('3. Kategoriler alınıyor...');
+                const categories = LocalDB.categories.getAll();
+                log(`✅ ${categories.length} kategori bulundu\n`);
+                
+                // Ayarları al
+                log('4. Ayarlar alınıyor...');
+                const settings = LocalDB.settings.get();
+                log(`✅ Cafe: ${settings.cafeName}\n`);
+                
+                // Test ürünü ekle
+                log('5. Test ürünü ekleniyor...');
+                const testProduct = {
+                    id: Date.now(),
+                    name: 'Test Ürünü',
+                    category: 'sicak',
+                    price: '50₺',
+                    image: '',
+                    description: 'Test için eklenen ürün',
+                    details: {}
+                };
+                LocalDB.menu.save(testProduct);
+                log('✅ Test ürünü eklendi\n');
+                
+                // Depolama istatistikleri
+                log('6. Depolama istatistikleri...');
+                const stats = LocalDB.stats.getStorageUsage();
+                log(`✅ Kullanılan: ${stats.used} MB / ${stats.max} MB (%${stats.percentage})\n`);
+                
+                log('🎉 TÜM TESTLER BAŞARILI!');
+                
+            } catch (error) {
+                log(`❌ HATA: ${error.message}`);
+                console.error(error);
+            }
+        }
+        
+        function testImageUpload() {
+            output.textContent = '';
+            log('📸 Fotoğraf Yükleme Testi\n');
+            log('Lütfen bir fotoğraf seçin...\n');
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    log(`Dosya: ${file.name}`);
+                    log(`Boyut: ${(file.size / 1024).toFixed(2)} KB\n`);
+                    
+                    log('Base64\'e çevriliyor...');
+                    const base64 = await LocalDB.image.toBase64(file);
+                    log(`✅ Base64 boyutu: ${(base64.length / 1024).toFixed(2)} KB\n`);
+                    
+                    log('Optimize ediliyor...');
+                    const optimized = await LocalDB.image.optimize(base64, 800, 600, 0.8);
+                    log(`✅ Optimize boyutu: ${(optimized.length / 1024).toFixed(2)} KB\n`);
+                    
+                    log('🎉 Fotoğraf başarıyla işlendi!');
+                    
+                } catch (error) {
+                    log(`❌ HATA: ${error.message}`);
+                }
+            };
+            
+            input.click();
+        }
+        
+        function showStats() {
+            output.textContent = '';
+            log('📊 İstatistikler\n');
+            
+            try {
+                const storageStats = LocalDB.stats.getStorageUsage();
+                const productStats = LocalDB.stats.getProductStats();
+                
+                log('=== DEPOLAMA ===');
+                log(`Kullanılan: ${storageStats.used} MB`);
+                log(`Toplam: ${storageStats.max} MB`);
+                log(`Yüzde: %${storageStats.percentage}`);
+                log(`Boş: ${storageStats.available} MB\n`);
+                
+                log('=== ÜRÜNLER ===');
+                log(`Toplam: ${productStats.totalProducts}`);
+                log(`Fotoğraflı: ${productStats.withImages}`);
+                log(`Fotoğrafsız: ${productStats.withoutImages}\n`);
+                
+                log('=== KATEGORİLER ===');
+                for (const [category, count] of Object.entries(productStats.byCategory)) {
+                    log(`${category}: ${count} ürün`);
+                }
+                
+            } catch (error) {
+                log(`❌ HATA: ${error.message}`);
+            }
+        }
+        
+        function clearData() {
+            if (confirm('⚠️ TÜM VERİLER SİLİNECEK! Emin misiniz?')) {
+                output.textContent = '';
+                log('🗑️ Veriler siliniyor...\n');
+                
+                try {
+                    LocalDB.clearAll();
+                    log('✅ Tüm veriler silindi!');
+                    log('Sayfa yenileniyor...');
+                    setTimeout(() => location.reload(), 1500);
+                } catch (error) {
+                    log(`❌ HATA: ${error.message}`);
+                }
+            }
+        }
+        
+        // Sayfa yüklendiğinde otomatik test
+        window.addEventListener('load', () => {
+            log('✅ Sayfa yüklendi');
+            log('LocalDB hazır: ' + (typeof LocalDB !== 'undefined' ? 'Evet' : 'Hayır'));
+            log('\nTest butonlarına tıklayın...\n');
+        });
+    </script>
+</body>
+</html>

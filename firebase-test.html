@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Bağlantı Testi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">🔥 Firebase Bağlantı Testi</h1>
+        
+        <div id="status" class="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p class="text-blue-800">Test başlatılıyor...</p>
+        </div>
+        
+        <div id="results" class="space-y-4">
+            <!-- Test sonuçları buraya eklenecek -->
+        </div>
+        
+        <div class="mt-6 flex gap-3">
+            <button onclick="testConnection()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                🔄 Tekrar Test Et
+            </button>
+            <button onclick="initializeData()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+                📥 Varsayılan Verileri Yükle
+            </button>
+            <a href="index.html" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-center">
+                🏠 Menüye Git
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            statusDiv.innerHTML = '<p class="text-blue-800">⏳ Firebase bağlantısı test ediliyor...</p>';
+            
+            try {
+                // Test 1: Firebase bağlantısı
+                addResult('✅ Firebase başarıyla başlatıldı', 'success');
+                addResult(`📦 Proje ID: ${firebase.app().options.projectId}`, 'info');
+                
+                // Test 2: Firestore bağlantısı
+                const testDoc = await db.collection('_test').doc('connection').set({
+                    timestamp: new Date(),
+                    message: 'Test başarılı'
+                });
+                addResult('✅ Firestore yazma testi başarılı', 'success');
+                
+                // Test 3: Veri okuma
+                const menuData = await FirebaseDB.getMenu();
+                addResult(`✅ Menü verileri okundu: ${menuData.length} ürün`, 'success');
+                
+                const categories = await FirebaseDB.getCategories();
+                addResult(`✅ Kategoriler okundu: ${categories.length} kategori`, 'success');
+                
+                const settings = await FirebaseDB.getSettings();
+                addResult(`✅ Ayarlar okundu: ${settings ? settings.cafeName : 'Yok'}`, 'success');
+                
+                statusDiv.innerHTML = '<p class="text-green-800 font-bold">🎉 Tüm testler başarılı! Firebase bağlantısı çalışıyor.</p>';
+                statusDiv.className = 'mb-6 p-4 rounded-lg bg-green-50 border border-green-200';
+                
+            } catch (error) {
+                console.error('Test hatası:', error);
+                addResult(`❌ Hata: ${error.message}`, 'error');
+                statusDiv.innerHTML = `<p class="text-red-800 font-bold">❌ Test başarısız: ${error.message}</p>`;
+                statusDiv.className = 'mb-6 p-4 rounded-lg bg-red-50 border border-red-200';
+            }
+        }
+        
+        async function initializeData() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<p class="text-blue-800">⏳ Varsayılan veriler yükleniyor...</p>';
+            statusDiv.className = 'mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200';
+            
+            try {
+                // Mevcut veri kontrolü
+                const existingMenu = await FirebaseDB.getMenu();
+                if (existingMenu && existingMenu.length > 0) {
+                    if (!confirm(`Firebase'de zaten ${existingMenu.length} ürün var. Üzerine yazmak istediğinizden emin misiniz?`)) {
+                        statusDiv.innerHTML = '<p class="text-gray-800">İşlem iptal edildi.</p>';
+                        statusDiv.className = 'mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200';
+                        return;
+                    }
+                }
+                
+                // Admin panelindeki varsayılan verileri kullan
+                // Bu kısım admin-modern.js'deki initializeDefaultData fonksiyonunu çağırır
+                statusDiv.innerHTML = '<p class="text-orange-800">⚠️ Varsayılan verileri yüklemek için admin paneline gidin ve ilk kez giriş yapın.</p>';
+                statusDiv.className = 'mb-6 p-4 rounded-lg bg-orange-50 border border-orange-200';
+                
+                addResult('ℹ️ Admin paneline giriş yaparak varsayılan veriler otomatik yüklenecek', 'info');
+                
+            } catch (error) {
+                console.error('Veri yükleme hatası:', error);
+                statusDiv.innerHTML = `<p class="text-red-800 font-bold">❌ Hata: ${error.message}</p>`;
+                statusDiv.className = 'mb-6 p-4 rounded-lg bg-red-50 border border-red-200';
+            }
+        }
+        
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+            
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-lg border ${colors[type]}`;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+        }
+        
+        // Sayfa yüklendiğinde otomatik test
+        window.addEventListener('load', testConnection);
+    </script>
+</body>
+</html>

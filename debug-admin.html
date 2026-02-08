@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Debug</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 Admin Panel Debug</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- LocalStorage Durumu -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">LocalStorage Durumu</h2>
+                <button onclick="checkLocalStorage()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mb-4">
+                    Kontrol Et
+                </button>
+                <div id="storage-info" class="text-sm font-mono bg-gray-100 p-4 rounded whitespace-pre-wrap"></div>
+            </div>
+            
+            <!-- Ürün Listesi -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Ürün Listesi</h2>
+                <button onclick="listProducts()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 mb-4">
+                    Ürünleri Listele
+                </button>
+                <div id="products-list" class="text-sm font-mono bg-gray-100 p-4 rounded whitespace-pre-wrap max-h-96 overflow-y-auto"></div>
+            </div>
+            
+            <!-- Test Ürün Ekle -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Test Ürün Ekle</h2>
+                <button onclick="addTestProduct()" class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 mb-4">
+                    Test Ürünü Ekle
+                </button>
+                <div id="add-result" class="text-sm font-mono bg-gray-100 p-4 rounded whitespace-pre-wrap"></div>
+            </div>
+            
+            <!-- Temizle -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Temizleme</h2>
+                <button onclick="clearAllData()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 mb-4">
+                    Tüm Verileri Sil
+                </button>
+                <button onclick="reloadPage()" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    Sayfayı Yenile
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-6 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Admin Paneline Git</h2>
+            <a href="admin.html" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Admin Panel'i Aç
+            </a>
+        </div>
+    </div>
+
+    <script src="local-database.js"></script>
+    <script>
+        function checkLocalStorage() {
+            const output = document.getElementById('storage-info');
+            let info = '';
+            
+            try {
+                // LocalDB'yi başlat
+                LocalDB.initialize();
+                
+                // Depolama istatistikleri
+                const stats = LocalDB.stats.getStorageUsage();
+                info += '=== DEPOLAMA ===\n';
+                info += `Kullanılan: ${stats.used} MB\n`;
+                info += `Toplam: ${stats.max} MB\n`;
+                info += `Yüzde: %${stats.percentage}\n`;
+                info += `Boş: ${stats.available} MB\n\n`;
+                
+                // Ürün istatistikleri
+                const productStats = LocalDB.stats.getProductStats();
+                info += '=== ÜRÜNLER ===\n';
+                info += `Toplam: ${productStats.totalProducts}\n`;
+                info += `Fotoğraflı: ${productStats.withImages}\n`;
+                info += `Fotoğrafsız: ${productStats.withoutImages}\n\n`;
+                
+                // Kategoriler
+                const categories = LocalDB.categories.getAll();
+                info += '=== KATEGORİLER ===\n';
+                info += `Toplam: ${categories.length}\n`;
+                categories.forEach(cat => {
+                    info += `- ${cat.name} (${cat.id})\n`;
+                });
+                
+                output.textContent = info;
+                
+            } catch (error) {
+                output.textContent = '❌ HATA: ' + error.message;
+            }
+        }
+        
+        function listProducts() {
+            const output = document.getElementById('products-list');
+            let list = '';
+            
+            try {
+                const products = LocalDB.menu.getAll();
+                
+                if (products.length === 0) {
+                    list = 'Hiç ürün yok!';
+                } else {
+                    list = `Toplam ${products.length} ürün:\n\n`;
+                    products.forEach((p, index) => {
+                        list += `${index + 1}. ${p.name}\n`;
+                        list += `   ID: ${p.id}\n`;
+                        list += `   Kategori: ${p.category}\n`;
+                        list += `   Fiyat: ${p.price}\n`;
+                        list += `   Fotoğraf: ${p.image ? 'Var (' + (p.image.length / 1024).toFixed(2) + ' KB)' : 'Yok'}\n`;
+                        list += `   Açıklama: ${p.description || '-'}\n\n`;
+                    });
+                }
+                
+                output.textContent = list;
+                
+            } catch (error) {
+                output.textContent = '❌ HATA: ' + error.message;
+            }
+        }
+        
+        function addTestProduct() {
+            const output = document.getElementById('add-result');
+            
+            try {
+                const testProduct = {
+                    id: Date.now(),
+                    name: 'Test Ürünü ' + new Date().toLocaleTimeString(),
+                    category: 'sicak',
+                    price: '99₺',
+                    image: '',
+                    description: 'Debug için eklenen test ürünü',
+                    details: {
+                        ingredients: 'Test malzemeler',
+                        serving: 'Test sunum',
+                        calories: '~100 kcal',
+                        note: 'Test notu'
+                    }
+                };
+                
+                // Ürünü ekle
+                const products = LocalDB.menu.getAll();
+                products.push(testProduct);
+                const saved = LocalDB.menu.saveAll(products);
+                
+                if (saved) {
+                    output.textContent = '✅ Test ürünü eklendi!\n\n';
+                    output.textContent += `ID: ${testProduct.id}\n`;
+                    output.textContent += `Ad: ${testProduct.name}\n`;
+                    output.textContent += `Kategori: ${testProduct.category}\n`;
+                    output.textContent += `Fiyat: ${testProduct.price}\n\n`;
+                    output.textContent += 'Şimdi admin.html\'i açın ve kontrol edin!';
+                } else {
+                    output.textContent = '❌ Ürün eklenemedi!';
+                }
+                
+            } catch (error) {
+                output.textContent = '❌ HATA: ' + error.message;
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('⚠️ TÜM VERİLER SİLİNECEK! Emin misiniz?')) {
+                try {
+                    LocalDB.clearAll();
+                    alert('✅ Tüm veriler silindi!');
+                    location.reload();
+                } catch (error) {
+                    alert('❌ Hata: ' + error.message);
+                }
+            }
+        }
+        
+        function reloadPage() {
+            location.reload();
+        }
+        
+        // Sayfa yüklendiğinde otomatik kontrol
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+            listProducts();
+        });
+    </script>
+</body>
+</html>
