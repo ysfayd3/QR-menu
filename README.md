@@ -2,6 +2,44 @@
 
 Modern, responsive ve çok dilli dijital menü sistemi. QR kod ile erişilebilir, admin paneli ile kolayca yönetilebilir.
 
+## ✨ YENİ: Otomatik Cihazlar Arası Senkronizasyon! 🚀
+
+Artık menünüz **TÜM CİHAZLARDA OTOMATİK** olarak senkronize oluyor!
+
+### Hangi Dosyaları Kullanmalıyım?
+
+#### Müşteri Menüsü (QR Kod ile açılacak)
+```
+✅ index-simple.html
+```
+- Müşterilerin göreceği menü
+- Otomatik senkronizasyon desteği
+- 20 varsayılan ürün ile gelir
+
+#### Admin Paneli
+
+**Seçenek 1: Otomatik Senkronizasyon (ÖNERİLEN) 🚀**
+```
+✅ admin-auto-sync.html
+```
+- GitHub Gist veya JSONBin.io ile otomatik senkronizasyon
+- Ürün ekle → Tüm cihazlar otomatik güncellenir!
+- Manuel dosya kopyalama YOK
+- 5 dakikada kurulum
+
+**Seçenek 2: Manuel JSON Sistemi**
+```
+✅ admin-simple.html
+```
+- JSON dosyasını manuel olarak kopyala
+- Daha basit ama manuel işlem gerektirir
+
+### Detaylı Kurulum Rehberleri
+- **Otomatik Senkronizasyon:** `OTOMATIK-SENKRONIZASYON-KURULUM.md`
+- **Manuel Senkronizasyon:** `CIHAZLAR-ARASI-SENKRONIZASYON.md`
+
+---
+
 ## 📸 Ekran Görüntüleri
 
 ### Müşteri Menüsü

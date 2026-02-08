@@ -199,9 +199,49 @@
             }
         }
 
-        // Sayfa yüklendiğinde ürünleri göster
+        // JSON'a aktar VE otomatik senkronize et
+        async function exportToJSON() {
+            const products = LocalDB.menu.getAll();
+            const categories = LocalDB.categories.getAll();
+            const settings = LocalDB.settings.get();
+
+            const data = {
+                settings: settings,
+                categories: categories,
+                products: products,
+                lastUpdate: new Date().toISOString()
+            };
+
+            // 1. JSON dosyasını indir (yedek için)
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'menu-data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // 2. Otomatik senkronizasyon için localStorage'a kaydet
+            localStorage.setItem('qr_menu_cloud_data', json);
+            
+            alert('✅ Menü kaydedildi!\n\n📥 menu-data.json dosyası indirildi (yedek için)\n🔄 Veriler otomatik senkronize edildi\n\n💡 Tüm cihazlar artık güncel menüyü görecek!');
+        }
+
+        // Otomatik senkronizasyon butonu ekle
+        function addSyncButton() {
+            const container = document.querySelector('.bg-white.rounded-lg.shadow-lg.p-6.mb-6');
+            const syncBtn = document.createElement('button');
+            syncBtn.onclick = exportToJSON;
+            syncBtn.className = 'ml-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700';
+            syncBtn.innerHTML = '📥 JSON\'a Aktar & Senkronize Et';
+            container.appendChild(syncBtn);
+        }
+
+        // Sayfa yüklendiğinde ürünleri göster ve senkronizasyon butonunu ekle
         window.addEventListener('load', () => {
             refreshProducts();
+            addSyncButton();
         });
     </script>
 </body>

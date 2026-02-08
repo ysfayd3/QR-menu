@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Otomatik Senkronizasyon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold mb-4">🍽️ QR Menü Admin Panel</h1>
+            <div class="flex gap-2">
+                <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Çıkış</button>
+                <button onclick="showSyncSettings()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">⚙️ Senkronizasyon Ayarları</button>
+            </div>
+        </div>
+
+        <!-- Senkronizasyon Ayarları Modal -->
+        <div id="sync-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
+                <h2 class="text-2xl font-bold mb-4">⚙️ Otomatik Senkronizasyon Ayarları</h2>
+                
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block font-bold mb-2">Senkronizasyon Yöntemi</label>
+                        <select id="sync-method" class="w-full px-4 py-2 border rounded" onchange="updateSyncMethod()">
+                            <option value="">Kapalı (Manuel)</option>
+                            <option value="gist">GitHub Gist (Önerilen)</option>
+                            <option value="jsonbin">JSONBin.io</option>
+                            <option value="custom">Özel URL</option>
+                        </select>
+                    </div>
+
+                    <!-- GitHub Gist Ayarları -->
+                    <div id="gist-settings" class="hidden space-y-4">
+                        <div>
+                            <label class="block font-bold mb-2">GitHub Personal Access Token</label>
+                            <input type="password" id="gist-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full px-4 py-2 border rounded">
+                            <p class="text-sm text-gray-600 mt-1">
+                                <a href="https://github.com/settings/tokens/new" target="_blank" class="text-blue-600 hover:underline">
+                                    Token oluştur →
+                                </a> (Sadece "gist" yetkisi seç)
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-2">Gist ID (Opsiyonel - Boş bırakırsan otomatik oluşturulur)</label>
+                            <input type="text" id="gist-id" placeholder="abc123def456" class="w-full px-4 py-2 border rounded">
+                        </div>
+                    </div>
+
+                    <!-- JSONBin Ayarları -->
+                    <div id="jsonbin-settings" class="hidden space-y-4">
+                        <div>
+                            <label class="block font-bold mb-2">JSONBin API Key</label>
+                            <input type="password" id="jsonbin-key" placeholder="$2a$10$..." class="w-full px-4 py-2 border rounded">
+                            <p class="text-sm text-gray-600 mt-1">
+                                <a href="https://jsonbin.io/api-keys" target="_blank" class="text-blue-600 hover:underline">
+                                    API Key al →
+                                </a>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block font-bold mb-2">Bin ID (Opsiyonel)</label>
+                            <input type="text" id="jsonbin-id" placeholder="65abc123def456" class="w-full px-4 py-2 border rounded">
+                        </div>
+                    </div>
+
+                    <!-- Özel URL Ayarları -->
+                    <div id="custom-settings" class="hidden space-y-4">
+                        <div>
+                            <label class="block font-bold mb-2">API Endpoint URL</label>
+                            <input type="url" id="custom-url" placeholder="https://siteniz.com/api/menu" class="w-full px-4 py-2 border rounded">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="saveSyncSettings()" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold">
+                        💾 Kaydet
+                    </button>
+                    <button onclick="testSync()" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold">
+                        🧪 Test Et
+                    </button>
+                    <button onclick="closeSyncModal()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold">
+                        İptal
+                    </button>
+                </div>
+
+                <div id="sync-status" class="mt-4 p-4 rounded hidden"></div>
+            </div>
+        </div>
+
+        <!-- Ürün Ekle Formu -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">➕ Yeni Ürün Ekle</h2>
+            <form id="product-form" class="space-y-4">
+                <input type="hidden" id="product-id">
+                <div>
+                    <label class="block font-bold mb-2">Ürün Adı *</label>
+                    <input type="text" id="name" required class="w-full px-4 py-2 border rounded">
+                </div>
+                
+                <div>
+                    <label class="block font-bold mb-2">Kategori *</label>
+                    <select id="category" required class="w-full px-4 py-2 border rounded"></select>
+                </div>
+                
+                <div>
+                    <label class="block font-bold mb-2">Fiyat *</label>
+                    <input type="text" id="price" required placeholder="örn: 50₺" class="w-full px-4 py-2 border rounded">
+                </div>
+                
+                <div>
+                    <label class="block font-bold mb-2">Açıklama</label>
+                    <textarea id="description" rows="3" class="w-full px-4 py-2 border rounded"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block font-bold mb-2">Fotoğraf (max 2MB)</label>
+                    <input type="file" id="image" accept="image/*" class="w-full px-4 py-2 border rounded">
+                    <img id="preview" class="hidden mt-2 w-full h-48 object-cover rounded">
+                </div>
+                
+                <button type="submit" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-lg">
+                    💾 KAYDET VE OTOMATİK SENKRONİZE ET
+                </button>
+            </form>
+        </div>
+
+        <!-- Ürün Listesi -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">📦 Ürünler (<span id="product-count">0</span>)</h2>
+                <div class="flex gap-2">
+                    <button onclick="refreshProducts()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        🔄 Yenile
+                    </button>
+                    <button onclick="manualSync()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                        🌐 Manuel Senkronize
+                    </button>
+                    <button onclick="resetCategories()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700" title="Kategorileri varsayılanlara sıfırla">
+                        📂 Kat. Güncelle
+                    </button>
+                </div>
+            </div>
+            <div id="products-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script src="local-database.js"></script>
+    <script>
+        // Giriş kontrolü
+        const loginData = JSON.parse(localStorage.getItem('adminLogin')) || JSON.parse(sessionStorage.getItem('adminLogin'));
+        if (!loginData || !loginData.isLoggedIn) {
+            window.location.href = 'login.html';
+        }
+
+        function logout() {
+            if (confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
+                localStorage.removeItem('adminLogin');
+                sessionStorage.removeItem('adminLogin');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // LocalDB'yi başlat
+        LocalDB.initialize();
+
+        // Senkronizasyon ayarlarını yükle
+        function loadSyncSettings() {
+            const settings = JSON.parse(localStorage.getItem('qr_menu_sync_settings') || '{}');
+            return settings;
+        }
+
+        // Senkronizasyon ayarlarını kaydet
+        function saveSyncSettingsToStorage(settings) {
+            localStorage.setItem('qr_menu_sync_settings', JSON.stringify(settings));
+        }
+
+        // Senkronizasyon modal
+        function showSyncSettings() {
+            const settings = loadSyncSettings();
+            document.getElementById('sync-method').value = settings.method || '';
+            
+            if (settings.method === 'gist') {
+                document.getElementById('gist-token').value = settings.gistToken || '';
+                document.getElementById('gist-id').value = settings.gistId || '';
+            } else if (settings.method === 'jsonbin') {
+                document.getElementById('jsonbin-key').value = settings.jsonbinKey || '';
+                document.getElementById('jsonbin-id').value = settings.jsonbinId || '';
+            } else if (settings.method === 'custom') {
+                document.getElementById('custom-url').value = settings.customUrl || '';
+            }
+            
+            updateSyncMethod();
+            document.getElementById('sync-modal').classList.remove('hidden');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('sync-modal').classList.add('hidden');
+        }
+
+        function updateSyncMethod() {
+            const method = document.getElementById('sync-method').value;
+            
+            document.getElementById('gist-settings').classList.add('hidden');
+            document.getElementById('jsonbin-settings').classList.add('hidden');
+            document.getElementById('custom-settings').classList.add('hidden');
+            
+            if (method === 'gist') {
+                document.getElementById('gist-settings').classList.remove('hidden');
+            } else if (method === 'jsonbin') {
+                document.getElementById('jsonbin-settings').classList.remove('hidden');
+            } else if (method === 'custom') {
+                document.getElementById('custom-settings').classList.remove('hidden');
+            }
+        }
+
+        function saveSyncSettings() {
+            const method = document.getElementById('sync-method').value;
+            const settings = { method };
+            
+            if (method === 'gist') {
+                settings.gistToken = document.getElementById('gist-token').value;
+                settings.gistId = document.getElementById('gist-id').value;
+            } else if (method === 'jsonbin') {
+                settings.jsonbinKey = document.getElementById('jsonbin-key').value;
+                settings.jsonbinId = document.getElementById('jsonbin-id').value;
+            } else if (method === 'custom') {
+                settings.customUrl = document.getElementById('custom-url').value;
+            }
+            
+            saveSyncSettingsToStorage(settings);
+            showSyncStatus('✅ Ayarlar kaydedildi!', 'success');
+            
+            setTimeout(() => {
+                closeSyncModal();
+            }, 1500);
+        }
+
+        async function testSync() {
+            showSyncStatus('🧪 Test ediliyor...', 'info');
+            
+            const testData = {
+                settings: { cafeName: "Test Cafe", tagline: "Test" },
+                categories: [],
+                products: [],
+                lastUpdate: new Date().toISOString()
+            };
+            
+            const result = await syncToCloud(testData);
+            
+            if (result.success) {
+                showSyncStatus('✅ Test başarılı! Senkronizasyon çalışıyor.', 'success');
+            } else {
+                showSyncStatus('❌ Test başarısız: ' + result.error, 'error');
+            }
+        }
+
+        function showSyncStatus(message, type) {
+            const status = document.getElementById('sync-status');
+            status.textContent = message;
+            status.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'bg-blue-100', 'text-green-800', 'text-red-800', 'text-blue-800');
+            
+            if (type === 'success') {
+                status.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                status.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                status.classList.add('bg-blue-100', 'text-blue-800');
+            }
+        }
+
+        // Cloud'a senkronize et
+        async function syncToCloud(data) {
+            const settings = loadSyncSettings();
+            
+            if (!settings.method) {
+                return { success: false, error: 'Senkronizasyon ayarlanmamış' };
+            }
+            
+            try {
+                if (settings.method === 'gist') {
+                    return await syncToGist(data, settings);
+                } else if (settings.method === 'jsonbin') {
+                    return await syncToJSONBin(data, settings);
+                } else if (settings.method === 'custom') {
+                    return await syncToCustom(data, settings);
+                }
+            } catch (error) {
+                console.error('Senkronizasyon hatası:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // GitHub Gist'e yükle
+        async function syncToGist(data, settings) {
+            const token = settings.gistToken;
+            const gistId = settings.gistId;
+            
+            if (!token) {
+                return { success: false, error: 'GitHub token eksik' };
+            }
+            
+            const gistData = {
+                description: 'QR Menu Data - Auto Sync',
+                public: true,
+                files: {
+                    'menu-data.json': {
+                        content: JSON.stringify(data, null, 2)
+                    }
+                }
+            };
+            
+            const url = gistId 
+                ? `https://api.github.com/gists/${gistId}`
+                : 'https://api.github.com/gists';
+            
+            const method = gistId ? 'PATCH' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                return { success: false, error: error.message || 'GitHub API hatası' };
+            }
+            
+            const result = await response.json();
+            
+            // Kalıcı URL oluştur (commit hash olmadan)
+            const username = result.owner ? result.owner.login : 'raw';
+            const permanentUrl = `https://gist.githubusercontent.com/${username}/${result.id}/raw/menu-data.json`;
+            
+            // Yeni gist oluşturulduysa ID'yi kaydet
+            if (!gistId) {
+                settings.gistId = result.id;
+                saveSyncSettingsToStorage(settings);
+                alert('✅ Gist oluşturuldu!\n\nLütfen sync-config.js dosyasına şu URL\'yi yapıştırın (Sadece bir kez):\n\n' + permanentUrl);
+                console.log('✅ Yeni Gist oluşturuldu:', result.id);
+                console.log('📋 Permanent URL:', permanentUrl);
+            }
+            
+            return { 
+                success: true, 
+                url: permanentUrl,
+                gistId: result.id,
+                isNew: !gistId
+            };
+        }
+
+        // JSONBin'e yükle
+        async function syncToJSONBin(data, settings) {
+            const apiKey = settings.jsonbinKey;
+            const binId = settings.jsonbinId;
+            
+            if (!apiKey) {
+                return { success: false, error: 'JSONBin API key eksik' };
+            }
+            
+            const url = binId
+                ? `https://api.jsonbin.io/v3/b/${binId}`
+                : 'https://api.jsonbin.io/v3/b';
+            
+            const method = binId ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': apiKey
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                return { success: false, error: 'JSONBin API hatası' };
+            }
+            
+            const result = await response.json();
+            
+            // Yeni bin oluşturulduysa ID'yi kaydet
+            if (!binId && result.metadata) {
+                settings.jsonbinId = result.metadata.id;
+                saveSyncSettingsToStorage(settings);
+                alert('✅ Bin oluşturuldu!\n\nLütfen sync-config.js dosyasına şu URL\'yi yapıştırın:\n\nhttps://api.jsonbin.io/v3/b/' + result.metadata.id + '/latest');
+                console.log('✅ Yeni Bin oluşturuldu:', result.metadata.id);
+            }
+            
+            return { success: true, binId: result.metadata?.id };
+        }
+
+        // Özel URL'e yükle
+        async function syncToCustom(data, settings) {
+            const url = settings.customUrl;
+            
+            if (!url) {
+                return { success: false, error: 'URL eksik' };
+            }
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                return { success: false, error: 'API hatası' };
+            }
+            
+            return { success: true };
+        }
+
+        // Manuel senkronizasyon
+        async function manualSync() {
+            const products = LocalDB.menu.getAll();
+            const categories = LocalDB.categories.getAll();
+            const settings = LocalDB.settings.get();
+
+            const data = {
+                settings: settings,
+                categories: categories,
+                products: products,
+                lastUpdate: new Date().toISOString()
+            };
+
+            const result = await syncToCloud(data);
+            
+            if (result.success) {
+                let msg = '✅ Menü başarıyla senkronize edildi!\n\n🌐 Tüm cihazlar güncellenecek.';
+                
+                // URL'yi her zaman göster ki kontrol edilebilsin
+                msg += '\n\n🔗 ŞU AN GÜNCELLENEN ADRES:\n' + result.url + '\n\n(Bu adresin sync-config.js dosyasındaki ile AYNI olduğundan emin olun)';
+                
+                alert(msg);
+                console.log('🔗 GÜNCEL URL:', result.url);
+            } else {
+                alert('❌ Senkronizasyon başarısız!\n\n' + result.error + '\n\nLütfen ayarları kontrol edin.');
+            }
+        }
+
+        // Fotoğraf önizleme
+        document.getElementById('image').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Fotoğraf 2MB\'dan küçük olmalı!');
+                e.target.value = '';
+                return;
+            }
+
+            try {
+                const base64 = await LocalDB.image.toBase64(file);
+                const optimized = await LocalDB.image.optimize(base64, 800, 600, 0.8);
+                document.getElementById('preview').src = optimized;
+                document.getElementById('preview').classList.remove('hidden');
+            } catch (error) {
+                alert('Fotoğraf yüklenemedi: ' + error.message);
+            }
+        });
+
+        // Form submit
+        document.getElementById('product-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const idInput = document.getElementById('product-id');
+            const isEdit = idInput.value !== '';
+
+            const imageFile = document.getElementById('image').files[0];
+            let imageData = '';
+
+            if (imageFile) {
+                try {
+                    const base64 = await LocalDB.image.toBase64(imageFile);
+                    imageData = await LocalDB.image.optimize(base64, 800, 600, 0.8);
+                } catch (error) {
+                    alert('Fotoğraf işlenemedi: ' + error.message);
+                    return;
+                }
+            } else if (isEdit) {
+                // Düzenleme modunda yeni resim seçilmediyse eskisini koru
+                const products = LocalDB.menu.getAll();
+                const existing = products.find(p => p.id == idInput.value);
+                if (existing) imageData = existing.image;
+            }
+
+            const product = {
+                id: isEdit ? parseInt(idInput.value) : Date.now(),
+                name: document.getElementById('name').value,
+                category: document.getElementById('category').value,
+                price: document.getElementById('price').value,
+                description: document.getElementById('description').value,
+                image: imageData,
+                details: {}
+            };
+
+            // Mevcut ürünleri al
+            const products = LocalDB.menu.getAll();
+            
+            if (isEdit) {
+                const index = products.findIndex(p => p.id === product.id);
+                if (index !== -1) products[index] = product;
+            } else {
+                products.push(product);
+            }
+
+            // Kaydet
+            const saved = LocalDB.menu.saveAll(products);
+
+            if (saved) {
+                // Otomatik senkronize et
+                const categories = LocalDB.categories.getAll();
+                const settings = LocalDB.settings.get();
+
+                const data = {
+                    settings: settings,
+                    categories: categories,
+                    products: products,
+                    lastUpdate: new Date().toISOString()
+                };
+
+                const result = await syncToCloud(data);
+                
+                if (result.success) {
+                    let msg = isEdit ? '✅ Ürün güncellendi ve senkronize edildi!' : '✅ Ürün eklendi ve senkronize edildi!';
+                    
+                    if (result.isNew) {
+                        msg += '\n\n⚠️ ÖNEMLİ: İlk kurulum yapıyorsanız, bu URL\'yi sync-config.js\'e yapıştırın (Sadece bir kez):\n' + result.url;
+                    }
+                    
+                    alert(msg);
+                } else {
+                    alert('✅ İşlem tamamlandı ama senkronizasyon başarısız!\n\n⚠️ ' + result.error + '\n\nLütfen "Manuel Senkronize" butonunu kullanın.');
+                }
+                
+                document.getElementById('product-form').reset();
+                document.getElementById('product-id').value = '';
+                document.getElementById('preview').classList.add('hidden');
+                document.querySelector('#product-form button[type="submit"]').textContent = '💾 KAYDET VE OTOMATİK SENKRONİZE ET';
+                refreshProducts();
+            } else {
+                alert('❌ İşlem başarısız!');
+            }
+        });
+
+        // Ürünleri listele
+        function refreshProducts() {
+            const products = LocalDB.menu.getAll();
+            document.getElementById('product-count').textContent = products.length;
+            
+            const list = document.getElementById('products-list');
+            
+            if (products.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-8">Henüz ürün yok</p>';
+                return;
+            }
+
+            list.innerHTML = products.map(p => `
+                <div class="border rounded-lg p-4 flex items-center gap-4">
+                    ${p.image ? `<img src="${p.image}" class="w-24 h-24 object-cover rounded">` : '<div class="w-24 h-24 bg-gray-200 rounded flex items-center justify-center text-gray-400">Fotoğraf Yok</div>'}
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${p.name}</h3>
+                        <p class="text-gray-600">${p.category} - ${p.price}</p>
+                        <p class="text-sm text-gray-500">${p.description || ''}</p>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="editProduct(${p.id})" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Düzenle
+                        </button>
+                        <button onclick="deleteProduct(${p.id})" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            Sil
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Ürün düzenle
+        function editProduct(id) {
+            const products = LocalDB.menu.getAll();
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('product-id').value = product.id;
+            document.getElementById('name').value = product.name;
+            document.getElementById('category').value = product.category;
+            document.getElementById('price').value = product.price;
+            document.getElementById('description').value = product.description || '';
+            
+            if (product.image) {
+                const preview = document.getElementById('preview');
+                preview.src = product.image;
+                preview.classList.remove('hidden');
+            } else {
+                document.getElementById('preview').classList.add('hidden');
+            }
+
+            const submitBtn = document.querySelector('#product-form button[type="submit"]');
+            submitBtn.textContent = '💾 GÜNCELLE VE SENKRONİZE ET';
+            
+            document.getElementById('product-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Ürün sil
+        async function deleteProduct(id) {
+            if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return;
+
+            const products = LocalDB.menu.getAll();
+            const filtered = products.filter(p => p.id !== id);
+            
+            const saved = LocalDB.menu.saveAll(filtered);
+            
+            if (saved) {
+                // Otomatik senkronize et
+                await manualSync();
+                refreshProducts();
+            } else {
+                alert('❌ Ürün silinemedi!');
+            }
+        }
+
+        // Kategorileri dropdown'a doldur
+        function populateCategoryDropdown() {
+            const categories = LocalDB.categories.getAll();
+            const select = document.getElementById('category');
+            const currentValue = select.value;
+            
+            select.innerHTML = categories.map(c => 
+                `<option value="${c.id}">${c.name}</option>`
+            ).join('');
+            
+            if (currentValue && Array.from(select.options).some(o => o.value === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // Kategorileri varsayılanlara sıfırla
+        function resetCategories() {
+            if(confirm('Kategoriler varsayılan ayarlara (local-database.js içindeki) döndürülecek. Onaylıyor musunuz?')) {
+                LocalDB.categories.saveAll(LocalDB.getDefaultCategories());
+                populateCategoryDropdown();
+                alert('✅ Kategoriler güncellendi!');
+            }
+        }
+
+        // Sayfa yüklendiğinde
+        window.addEventListener('load', () => {
+            refreshProducts();
+            populateCategoryDropdown();
+        });
+    </script>
+</body>
+</html>

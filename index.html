@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="sync-config.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -365,6 +366,45 @@
     <!-- Yerel Veritabanı -->
     <script src="local-database.js"></script>
     <script src="script.js"></script>
+
+    <!-- OTOMATİK SENKRONİZASYON SCRİPTİ -->
+    <script>
+        // Sayfa yüklendiğinde Cloud'dan güncel veriyi çek
+        window.addEventListener('load', async () => {
+            if (typeof SyncManager === 'undefined') return;
+            
+            // Güncelleme kontrol fonksiyonu
+            const checkForUpdates = async () => {
+                console.log('🔄 Menü güncellemeleri kontrol ediliyor...');
+                const cloudData = await SyncManager.fetchFromCloud();
+                
+                if (cloudData) {
+                    // Mevcut veriyi kontrol et
+                    const currentData = localStorage.getItem('qr_menu_products');
+                    const newData = JSON.stringify(cloudData.products);
+                    
+                    // Eğer veri değişmişse güncelle ve sayfayı yenile
+                    if (currentData !== newData) {
+                        console.log('📦 Yeni menü bulundu, güncelleniyor...');
+                        if (cloudData.products) localStorage.setItem('qr_menu_products', JSON.stringify(cloudData.products));
+                        if (cloudData.categories) localStorage.setItem('qr_menu_categories', JSON.stringify(cloudData.categories));
+                        if (cloudData.settings) localStorage.setItem('qr_menu_settings', JSON.stringify(cloudData.settings));
+                        
+                        // Kullanıcıya hissettirmeden sayfayı yenile
+                        location.reload();
+                    }
+                }
+            };
+            
+            // 1. Açılışta kontrol et
+            await checkForUpdates();
+            
+            // 2. Periyodik olarak kontrol et (sync-config.js'deki süreye göre - varsayılan 1 dk)
+            if (typeof SyncConfig !== 'undefined' && SyncConfig.autoRefreshInterval) {
+                setInterval(checkForUpdates, SyncConfig.autoRefreshInterval);
+            }
+        });
+    </script>
     
     <script>
         // Menüye giriş fonksiyonu

@@ -370,7 +370,8 @@ const LocalDB = {
       { id: 'sicak', name: 'Sıcak İçecekler', icon: '☕' },
       { id: 'soguk', name: 'Soğuk İçecekler', icon: '🧃' },
       { id: 'yemek', name: 'Yemekler', icon: '🍽️' },
-      { id: 'tatli', name: 'Tatlılar', icon: '🍰' }
+      { id: 'tatli', name: 'Tatlılar', icon: '🍰' },
+      { id: 'sandvic', name: 'Sandviçler', icon: '🥪' }
     ];
   },
 

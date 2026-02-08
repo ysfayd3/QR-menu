@@ -1,0 +1,80 @@
+{
+  "settings": {
+    "cafeName": "Leanor Cafe",
+    "tagline": "Lezzetin ve Keyifin Adresi"
+  },
+  "categories": [
+    { "id": "nargile", "name": "Nargile", "icon": "🪔" },
+    { "id": "sicak", "name": "Sıcak İçecekler", "icon": "☕" },
+    { "id": "soguk", "name": "Soğuk İçecekler", "icon": "🧃" },
+    { "id": "yemek", "name": "Yemekler", "icon": "🍽️" },
+    { "id": "tatli", "name": "Tatlılar", "icon": "🍰" }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Türk Kahvesi",
+      "category": "sicak",
+      "price": "45₺",
+      "image": "",
+      "description": "Geleneksel yöntemle hazırlanan Türk kahvesi",
+      "details": {
+        "ingredients": "Özel çekilmiş Türk kahvesi",
+        "serving": "Fincan",
+        "calories": "~5 kcal"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Cappuccino",
+      "category": "sicak",
+      "price": "55₺",
+      "image": "",
+      "description": "Sütlü köpüklü İtalyan kahvesi",
+      "details": {
+        "ingredients": "Espresso, süt köpüğü, tarçın",
+        "serving": "Orta boy fincan",
+        "calories": "~120 kcal"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Limonata",
+      "category": "soguk",
+      "price": "45₺",
+      "image": "",
+      "description": "Taze sıkılmış limonata",
+      "details": {
+        "ingredients": "Taze limon, nane, şeker",
+        "serving": "Büyük bardak",
+        "calories": "~120 kcal"
+      }
+    },
+    {
+      "id": 4,
+      "name": "Elma Nargile",
+      "category": "nargile",
+      "price": "150₺",
+      "image": "",
+      "description": "Taze elma aroması ile ferahlatıcı nargile keyfi",
+      "details": {
+        "ingredients": "Premium elma aroması, özel nargile tütünü",
+        "serving": "Tek kişilik",
+        "time": "45-60 dakika"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Waffle",
+      "category": "tatli",
+      "price": "80₺",
+      "image": "",
+      "description": "Meyveli veya çikolatalı waffle",
+      "details": {
+        "ingredients": "Waffle hamuru, meyve/çikolata sosu",
+        "serving": "1 porsiyon",
+        "calories": "~450 kcal"
+      }
+    }
+  ]
+}

@@ -22,7 +22,8 @@ const translations = {
             sicak: 'Sıcak İçecekler',
             soguk: 'Soğuk İçecekler',
             yemek: 'Yemekler',
-            tatli: 'Tatlılar'
+            tatli: 'Tatlılar',
+            sandvic: 'Sandviçler'
         }
     },
     en: {
@@ -34,7 +35,8 @@ const translations = {
             sicak: 'Hot Beverages',
             soguk: 'Cold Beverages',
             yemek: 'Food',
-            tatli: 'Desserts'
+            tatli: 'Desserts',
+            sandvic: 'Sandwiches'
         }
     }
 };

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leanor Cafe - Menü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="sync-config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
+        html { scroll-behavior: smooth; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 gradient-bg flex items-center justify-center">
+        <div class="text-center px-6">
+            <div class="mb-8">
+                <div class="w-24 h-24 mx-auto bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center shadow-2xl">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-5xl font-bold text-white mb-3" id="cafe-name-welcome">Leanor Cafe</h1>
+            <p class="text-xl text-white/90 mb-12" id="cafe-tagline-welcome">Lezzetin ve Keyifin Adresi</p>
+            <button onclick="enterMenu()" class="px-10 py-4 bg-white text-purple-600 rounded-full font-semibold text-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
+                Menüyü Keşfet
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="hidden min-h-screen">
+        <!-- Header -->
+        <header class="gradient-bg text-white shadow-lg p-6 text-center">
+            <h1 class="text-3xl font-bold mb-1" id="cafe-name">Leanor Cafe</h1>
+            <p class="text-sm text-white/90" id="cafe-tagline">Lezzetin ve Keyifin Adresi</p>
+        </header>
+
+        <!-- Categories -->
+        <div class="bg-white shadow-md p-4">
+            <div id="categories" class="flex gap-2 overflow-x-auto pb-2"></div>
+        </div>
+
+        <!-- Products -->
+        <main class="container mx-auto px-4 py-6">
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="empty-state" class="hidden text-center py-20">
+                <p class="text-gray-400 text-lg">Ürün bulunamadı</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let menuData = [];
+        let categories = [];
+        let settings = {};
+        let currentCategory = 'all';
+
+        // VARSAYILAN MENÜ - Yeni cihazlarda otomatik yüklenir
+        const DEFAULT_MENU = {
+            settings: {
+                cafeName: "Leanor Cafe",
+                tagline: "Lezzetin ve Keyifin Adresi"
+            },
+            categories: [
+                { id: "nargile", name: "Nargile", icon: "🪔" },
+                { id: "sicak", name: "Sıcak İçecekler", icon: "☕" },
+                { id: "soguk", name: "Soğuk İçecekler", icon: "🧃" },
+                { id: "yemek", name: "Yemekler", icon: "🍽️" },
+                { id: "tatli", name: "Tatlılar", icon: "🍰" }
+            ],
+            products: [
+                { id: 1, name: "Türk Kahvesi", category: "sicak", price: "45₺", image: "", description: "Geleneksel yöntemle hazırlanan Türk kahvesi", details: { ingredients: "Özel çekilmiş Türk kahvesi", serving: "Fincan", calories: "~5 kcal" } },
+                { id: 2, name: "Cappuccino", category: "sicak", price: "55₺", image: "", description: "Sütlü köpüklü İtalyan kahvesi", details: { ingredients: "Espresso, süt köpüğü, tarçın", serving: "Orta boy fincan", calories: "~120 kcal" } },
+                { id: 3, name: "Latte", category: "sicak", price: "55₺", image: "", description: "Sütlü espresso kahve", details: { ingredients: "Espresso, buharda ısıtılmış süt", serving: "Büyük fincan", calories: "~150 kcal" } },
+                { id: 4, name: "Sıcak Çikolata", category: "sicak", price: "50₺", image: "", description: "Yoğun Belçika çikolatası", details: { ingredients: "Belçika çikolatası, süt, krema", serving: "Orta boy fincan", calories: "~250 kcal" } },
+                { id: 5, name: "Çay", category: "sicak", price: "20₺", image: "", description: "Geleneksel demleme çay", details: { ingredients: "Özel demlik çayı", serving: "İnce belli bardak", calories: "~2 kcal" } },
+                { id: 6, name: "Limonata", category: "soguk", price: "45₺", image: "", description: "Taze sıkılmış limonata", details: { ingredients: "Taze limon, nane, şeker", serving: "Büyük bardak", calories: "~120 kcal" } },
+                { id: 7, name: "Ice Latte", category: "soguk", price: "60₺", image: "", description: "Buzlu sütlü kahve", details: { ingredients: "Espresso, soğuk süt, buz", serving: "Büyük bardak", calories: "~180 kcal" } },
+                { id: 8, name: "Milkshake", category: "soguk", price: "65₺", image: "", description: "Çikolata, vanilya veya çilek", details: { ingredients: "Dondurma, süt, aroma", serving: "Büyük bardak", calories: "~350 kcal" } },
+                { id: 9, name: "Smoothie", category: "soguk", price: "55₺", image: "", description: "Taze meyveli smoothie", details: { ingredients: "Muz, çilek, yaban mersini, yoğurt", serving: "Orta boy bardak", calories: "~200 kcal" } },
+                { id: 10, name: "Soğuk Çay", category: "soguk", price: "35₺", image: "", description: "Şeftali veya limon aromalı", details: { ingredients: "Çay, meyve aroması, buz", serving: "Büyük bardak", calories: "~80 kcal" } },
+                { id: 11, name: "Elma Nargile", category: "nargile", price: "150₺", image: "", description: "Taze elma aroması ile ferahlatıcı nargile keyfi", details: { ingredients: "Premium elma aroması, özel nargile tütünü", serving: "Tek kişilik", time: "45-60 dakika" } },
+                { id: 12, name: "Çilek Nargile", category: "nargile", price: "150₺", image: "", description: "Tatlı çilek aroması ile keyifli nargile", details: { ingredients: "Premium çilek aroması, özel nargile tütünü", serving: "Tek kişilik", time: "45-60 dakika" } },
+                { id: 13, name: "Nane Limon Nargile", category: "nargile", price: "160₺", image: "", description: "Ferahlatıcı nane limon karışımı", details: { ingredients: "Nane, limon aroması, premium tütün", serving: "Tek kişilik", time: "45-60 dakika" } },
+                { id: 14, name: "Serpme Kahvaltı", category: "yemek", price: "180₺", image: "", description: "2 kişilik zengin serpme kahvaltı tabağı", details: { ingredients: "Peynir çeşitleri, zeytin, reçel, bal, kaymak, yumurta", serving: "2 kişilik", calories: "~800 kcal" } },
+                { id: 15, name: "Leanor Burger", category: "yemek", price: "120₺", image: "", description: "Özel soslu premium hamburger", details: { ingredients: "200gr dana köfte, kaşar, domates, marul", serving: "Patates kızartması ile", calories: "~650 kcal" } },
+                { id: 16, name: "Makarna", category: "yemek", price: "85₺", image: "", description: "Kremalı veya domates soslu", details: { ingredients: "Penne makarna, sos, parmesan", serving: "1 porsiyon", calories: "~450 kcal" } },
+                { id: 17, name: "Waffle", category: "tatli", price: "80₺", image: "", description: "Meyveli veya çikolatalı waffle", details: { ingredients: "Waffle hamuru, meyve/çikolata sosu", serving: "1 porsiyon", calories: "~450 kcal" } },
+                { id: 18, name: "Cheesecake", category: "tatli", price: "75₺", image: "", description: "Orman meyveli cheesecake", details: { ingredients: "Krem peynir, bisküvi, orman meyveleri", serving: "1 dilim", calories: "~380 kcal" } },
+                { id: 19, name: "Brownie", category: "tatli", price: "70₺", image: "", description: "Sıcak çikolatalı brownie", details: { ingredients: "Çikolata, ceviz, dondurma", serving: "1 porsiyon", calories: "~420 kcal" } },
+                { id: 20, name: "Tiramisu", category: "tatli", price: "85₺", image: "", description: "İtalyan klasiği tiramisu", details: { ingredients: "Mascarpone, kahve, kedi dili bisküvi", serving: "1 porsiyon", calories: "~400 kcal" } }
+            ]
+        };
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadMenu();
+            updateUI();
+        });
+
+        // Menüyü yükle - OTOMATİK SENKRONİZASYON
+        async function loadMenu() {
+            try {
+                console.log('🔄 Menü yükleniyor...');
+                
+                // 1. ÖNCE: Cloud'dan otomatik senkronize et
+                if (typeof SyncManager !== 'undefined') {
+                    const cloudData = await SyncManager.fetchFromCloud();
+                    if (cloudData && cloudData.products && cloudData.products.length > 0) {
+                        menuData = cloudData.products;
+                        categories = cloudData.categories || DEFAULT_MENU.categories;
+                        settings = cloudData.settings || DEFAULT_MENU.settings;
+                        console.log(`✅ Cloud'dan ${menuData.length} ürün yüklendi (OTOMATIK)`);
+                        
+                        // Otomatik güncellemeyi başlat
+                        SyncManager.startAutoRefresh((newData) => {
+                            if (newData && newData.products) {
+                                menuData = newData.products;
+                                categories = newData.categories || categories;
+                                settings = newData.settings || settings;
+                                updateUI();
+                                console.log('🔄 Menü otomatik güncellendi!');
+                            }
+                        });
+                        
+                        return;
+                    }
+                }
+                
+                // 2. SONRA: Yerel JSON dosyasından yükle
+                try {
+                    const response = await fetch('menu-data.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        menuData = data.products || [];
+                        categories = data.categories || [];
+                        settings = data.settings || {};
+                        console.log(`✅ Yerel JSON'dan ${menuData.length} ürün yüklendi`);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('⚠️ Yerel JSON dosyası bulunamadı');
+                }
+                
+                // 3. EN SON: Varsayılan menüyü kullan
+                menuData = DEFAULT_MENU.products;
+                categories = DEFAULT_MENU.categories;
+                settings = DEFAULT_MENU.settings;
+                console.log(`✅ Varsayılan menü yüklendi: ${menuData.length} ürün`);
+                
+            } catch (error) {
+                console.error('❌ Menü yükleme hatası:', error);
+                // Hata durumunda bile varsayılan menüyü göster
+                menuData = DEFAULT_MENU.products;
+                categories = DEFAULT_MENU.categories;
+                settings = DEFAULT_MENU.settings;
+            }
+        }
+
+        // UI'ı güncelle
+        function updateUI() {
+            // Cafe adı
+            document.getElementById('cafe-name-welcome').textContent = settings.cafeName || 'Leanor Cafe';
+            document.getElementById('cafe-tagline-welcome').textContent = settings.tagline || 'Lezzetin ve Keyifin Adresi';
+            document.getElementById('cafe-name').textContent = settings.cafeName || 'Leanor Cafe';
+            document.getElementById('cafe-tagline').textContent = settings.tagline || 'Lezzetin ve Keyifin Adresi';
+            
+            // Kategoriler
+            renderCategories();
+            
+            // Ürünler
+            renderProducts();
+        }
+
+        // Kategorileri render et
+        function renderCategories() {
+            const container = document.getElementById('categories');
+            
+            const allButton = `
+                <button onclick="filterCategory('all')" class="px-6 py-2 rounded-full font-semibold whitespace-nowrap ${currentCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}">
+                    Tümü
+                </button>
+            `;
+            
+            const categoryButtons = categories.map(cat => `
+                <button onclick="filterCategory('${cat.id}')" class="px-6 py-2 rounded-full font-semibold whitespace-nowrap ${currentCategory === cat.id ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}">
+                    ${cat.icon} ${cat.name}
+                </button>
+            `).join('');
+            
+            container.innerHTML = allButton + categoryButtons;
+        }
+
+        // Ürünleri render et
+        function renderProducts() {
+            const grid = document.getElementById('products-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            let filtered = menuData;
+            
+            if (currentCategory !== 'all') {
+                filtered = menuData.filter(p => p.category === currentCategory);
+            }
+            
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            grid.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            grid.innerHTML = filtered.map(product => `
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
+                    ${product.image ? 
+                        `<img src="${product.image}" class="w-full h-48 object-cover">` : 
+                        `<div class="w-full h-48 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-4xl">${getCategoryIcon(product.category)}</div>`
+                    }
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description || ''}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-purple-600">${product.price}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Kategori filtrele
+        function filterCategory(categoryId) {
+            currentCategory = categoryId;
+            renderCategories();
+            renderProducts();
+        }
+
+        // Kategori ikonu al
+        function getCategoryIcon(categoryId) {
+            const cat = categories.find(c => c.id === categoryId);
+            return cat ? cat.icon : '🍽️';
+        }
+
+        // Menüye gir
+        function enterMenu() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

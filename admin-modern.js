@@ -423,6 +423,9 @@ function confirmDeleteProduct(id) {
         closeModal();
         renderProducts();
         showNotification('Ürün başarıyla silindi! 🗑️', 'success');
+        
+        // Otomatik senkronizasyon tetikle
+        if (window.triggerAutoSync) window.triggerAutoSync();
     } catch (error) {
         console.error('❌ Ürün silme hatası:', error);
         showErrorModal('Ürün silinirken hata oluştu: ' + error.message);
@@ -712,6 +715,9 @@ function saveProduct(event) {
             showNotification('✅ Ürün eklendi!', 'success');
         }
         
+        // Otomatik senkronizasyon tetikle
+        if (window.triggerAutoSync) window.triggerAutoSync();
+        
     } catch (error) {
         console.error('❌ Ürün kaydetme hatası:', error);
         showErrorModal(error.message || 'Ürün kaydedilirken bir hata oluştu!');
@@ -920,6 +926,9 @@ function saveCategory(event, isEdit = false) {
             renderCategoriesSection();
             showNotification('Kategori başarıyla güncellendi! ✨', 'success');
         }
+        
+        // Otomatik senkronizasyon tetikle
+        if (window.triggerAutoSync) window.triggerAutoSync();
     } else {
         // Yeni ekleme modu
         if (categories.find(c => c.id === categoryData.id)) {
@@ -932,6 +941,9 @@ function saveCategory(event, isEdit = false) {
         closeModal();
         renderCategoriesSection();
         showNotification('Kategori başarıyla eklendi! 🎉', 'success');
+        
+        // Otomatik senkronizasyon tetikle
+        if (window.triggerAutoSync) window.triggerAutoSync();
     }
 }
 
@@ -1034,6 +1046,9 @@ function confirmDeleteCategory(id) {
     closeModal();
     renderCategoriesSection();
     showNotification('Kategori başarıyla silindi! 🗑️', 'success');
+    
+    // Otomatik senkronizasyon tetikle
+    if (window.triggerAutoSync) window.triggerAutoSync();
 }
 
 // Ayarlar bölümü
@@ -1133,6 +1148,9 @@ function saveSettings() {
         settings.tagline = cafeTagline.value;
         LocalDB.settings.save(settings);
         showNotification('Ayarlar kaydedildi! ✨', 'success');
+        
+        // Otomatik senkronizasyon tetikle
+        if (window.triggerAutoSync) window.triggerAutoSync();
     } catch (error) {
         console.error('Ayarlar kaydedilemedi:', error);
         showErrorModal('Ayarlar kaydedilirken hata oluştu!');
